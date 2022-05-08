@@ -152,14 +152,15 @@ def hill_climb_step(times, users, artist, team):
 
 def better_than_kim(times, annas, artist):
     possible_teams = []
+    kim_possible = ([], 0)
     for anna in annas:
         possible_teams.append((anna, infect(times, artist, [anna])))
     possible_teams = sorted(possible_teams, key=lambda x: x[1])[:20]
     possible_teams = [anna[0] for anna in possible_teams]
     possible_teams = choose_sets(possible_teams, 5)
     for team in possible_teams:
-        kim_possible = max((team, infect(times, artist, team)), key=lambda x: x[1])
-    kim_possible=[kim[0] for kim in kim_possible]
+        kim_possible = max((team, infect(times, artist, team), kim_possible), key=lambda x: x[1])
+    kim_possible = [kim[0] for kim in kim_possible]
     return kim_possible
 
 
