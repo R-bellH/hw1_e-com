@@ -197,6 +197,14 @@ def harmonic_inner(G, node1, dists):
 
 
 def hill_climb(times, users, artist):
+    """
+    implmntation of the hill climb algorithm, we decided to send the 100 highest HC-scoring users for
+    evaluation due to time complexity
+    :param times: the week of the experiment
+    :param users: 100 of the best scoring users (using Harmonic centrality methodology)
+    :param artist: the artist for the current run
+    :return: a team of 5 influences chosen by the hill climb method
+    """
     team = []
     for i in range(5):
         team.append(hill_climb_step(times, users, artist, team))
@@ -215,6 +223,15 @@ def hill_climb_step(times, users, artist, team):
 
 
 def better_than_kim(times, annas, artist):
+    """
+    another methodology to choose the most influential team
+    out of the 100 highest HC-scoring users keep the 15 most individually influential users
+    try all possible teams of 5 and keep the most successful team
+    :param times: the week of the experiment
+    :param annas: 100 of the best scoring users (using Harmonic centrality methodology)
+    :param artist: the artist for the current run
+    :return: the team that outdid the rest of 15C5 possible combination
+    """
     possible_teams = []
     kim_possible = ([], 0)
     for anna in annas:
@@ -293,8 +310,8 @@ glam0 = pd.read_csv('instaglam0.csv')
 
 # add actual edges
 for node, friend in zip(glam0['userID'], glam0['friendID']):
-    G0.add_node(node, weight=0)  # attach the class User to the node in the graph
-    G0.add_node(friend, weight=0)  # attach the class User to the node in the graph
+    G0.add_node(node, weight=0)
+    G0.add_node(friend, weight=0)
     G0.add_edge(node, friend, weight=1)
     G0.add_edge(node, friend, weight=1)
 
@@ -327,13 +344,18 @@ for artist in artists:
     print(f'for artist = {artist}')
     hill_climb_team = hill_climb(times, top100, artist)  # hill_climb(times, top100, artist)
     print(f'hill_climb_team = {hill_climb_team}')
-    print(f' hill climb score = {infect(times, artist, hill_climb_team)}')
+    hill_climb_score = infect(times, artist, hill_climb_team)
+    print(f' hill climb score = {hill_climb_score}')
     kim_possible_team = better_than_kim(times, top100, artist)
     print(f'kim_possible_team = {kim_possible_team}')
-    print(f'kim possible score = {infect(times, artist, hill_climb_team)}')
-    MIB = max(infected(times, artist, infected(times, artist, kim_possible_team)), key=lambda x: x[1])
+    kim_possible_score = infect(times, artist, kim_possible_team)
+    print(f'kim possible score = {kim_possible_score}')
+    MIB = max((hill_climb_team, hill_climb_score), (kim_possible_team, kim_possible_score), key=lambda x: x[1])
     print(f'MIB = {MIB}')
-    data.append([artist, MIB[0]])
+    row = [artist]
+    for man in MIB[0]:
+        row.append(man)
+    data.append(row)
 cols = ['Artists']
 for i in range(5):
     cols.append(f'influences {i + 1}')
