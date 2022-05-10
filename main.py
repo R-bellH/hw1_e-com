@@ -37,32 +37,32 @@ def increment_times(G0):
     return [G0, G1, G2, G3, G4, G5, G6]
 
 
-def infected(times, artist, influncers):
+def infected(week, artist, influncers):
     """
     wrapper function for infect, return both the chosen influncers and the score they got
-    :param times: array of the graphs over the 7 time periods (including zero)
+    :param week: array of the graphs over the 7 time periods (including zero)
     :param artist: the artist for the current run
     :param influncers: the chosen influncers
     :return:  tuple with the influncers and the score they got on the graph
     """
-    return (influncers, infect(times, artist, influncers))
+    return (influncers, infect(week, artist, influncers))
 
 
-def infect(times, artist, influncers):
+def infect(week, artist, influncers):
     """
     wrapper function to run over all the graphs of the week
-    :param times: the week of the experiment
+    :param week: the week of the experiment
     :param artist: the artist for the current run
     :param influncers: the chosen influncers
     :return: float with the estimated influence score that the team got
     """
-    G0 = patient_zero(times[0], influncers)
-    G1 = increment_people(times[1], G0, artist)
-    G2 = increment_people(times[2], G1, artist)
-    G3 = increment_people(times[3], G2, artist)
-    G4 = increment_people(times[4], G3, artist)
-    G5 = increment_people(times[5], G4, artist)
-    G6 = increment_people(times[6], G5, artist)
+    G0 = patient_zero(week[0], influncers)
+    G1 = increment_people(week[1], G0, artist)
+    G2 = increment_people(week[2], G1, artist)
+    G3 = increment_people(week[3], G2, artist)
+    G4 = increment_people(week[4], G3, artist)
+    G5 = increment_people(week[5], G4, artist)
+    G6 = increment_people(week[6], G5, artist)
     infected = 0
     for i in G6.nodes:
         infected += G6.nodes[i]['weight']
@@ -196,11 +196,11 @@ def harmonic_inner(G, node1, dists):
     return sum_d
 
 
-def hill_climb(times, users, artist):
+def hill_climb(week, users, artist):
     """
     implmntation of the hill climb algorithm, we decided to send the 100 highest HC-scoring users for
     evaluation due to time complexity
-    :param times: the week of the experiment
+    :param week: the week of the experiment
     :param users: 100 of the best scoring users (using Harmonic centrality methodology)
     :param artist: the artist for the current run
     :return: a team of 5 influences chosen by the hill climb method
@@ -208,27 +208,27 @@ def hill_climb(times, users, artist):
     team = []
     unused_users = users.copy()
     for i in range(5):
-        team.append(hill_climb_step(times, unused_users, artist, team))
+        team.append(hill_climb_step(week, unused_users, artist, team))
         unused_users.remove(team[i])
     return team
 
 
-def hill_climb_step(times, unused_users, artist, team):
+def hill_climb_step(week, unused_users, artist, team):
     kim = (None, 0)
     for user in unused_users:
         team_build = team.copy()
         team_build.append(user)
-        anna_zack = (user, infect(times, artist, team_build))
+        anna_zack = (user, infect(week, artist, team_build))
         kim = max(kim, anna_zack, key=lambda x: x[1])
     return kim[0]
 
 
-def team_O_five(times, users, artist):
+def team_O_five(week, users, artist):
     """
     another methodology to choose the most influential team
     out of the 100 highest HC-scoring users keep the 15 most individually influential users
     try all possible teams of 5 and keep the most successful team
-    :param times: the week of the experiment
+    :param week: the week of the experiment
     :param users: 100 of the best scoring users (using Harmonic centrality methodology)
     :param artist: the artist for the current run
     :return: the team that outdid the rest of 15C5 possible combination
@@ -237,12 +237,12 @@ def team_O_five(times, users, artist):
     best = 0
     best_team = []
     for user in users:
-        possible_teams.append((user, infect(times, artist, [user])))
+        possible_teams.append((user, infect(week, artist, [user])))
     possible_teams = sorted(possible_teams, key=lambda x: x[1])[:15]
     possible_teams = [user[0] for user in possible_teams]
     possible_teams = choose_sets(possible_teams, 5)
     for team in possible_teams:
-        score = infect(times, artist, team)
+        score = infect(week, artist, team)
         if score > best:
             best = score
             best_team = team
@@ -276,15 +276,15 @@ def read_Graphs(G0):
     :param G0: the unweighted graph of the received data
     :return: ordered list with all graphs of the week
     """
-    times = [G0]
+    week = [G0]
     for i in range(1, 7):
         df = pd.read_csv(f'prob_instaglam {i}.csv')
         G = nx.from_pandas_edgelist(df, 'source', 'target', 'weight')
-        times.append(G)
+        week.append(G)
     nodes = [(node, G0.nodes[node]) for node in G0.nodes]
-    for G in times:
+    for G in week:
         G.add_nodes_from(nodes)
-    return times
+    return week
 
 
 """
@@ -304,7 +304,6 @@ y = (y + 1) % 5 if x == y else y
 print("your artists are:")
 print(*options[x], *options[y])
 artists = [*options[x], *options[y]]
-print(artists)
 
 # init cell
 G0 = nx.Graph()
@@ -317,8 +316,12 @@ for node, friend in zip(glam0['userID'], glam0['friendID']):
     G0.add_edge(node, friend, weight=1)
     G0.add_edge(node, friend, weight=1)
 
-spotifly = pd.read_csv('spotifly.csv')
+# remove self_loops
+G0.remove_edges_from(nx.selfloop_edges(G0))
 
+
+# build dict with the listen info for each artist in our list
+spotifly = pd.read_csv('spotifly.csv')
 listen = {}
 for artist in artists:
     listen[artist] = {}
@@ -329,9 +332,6 @@ for cuser, artist, plays in zip(spotifly['userID'], spotifly[' artistID'], spoti
     if artist in artists:
         listen[artist][cuser] = plays
 
-# remove self_loops
-G0.remove_edges_from(nx.selfloop_edges(G0))
-
 """evaluate best influences """
 
 HC_scores = harmonic(G0)
@@ -339,18 +339,22 @@ HC_scores = harmonic(G0)
 top100 = list(sorted(HC_scores.items(), key=lambda item: item[1], reverse=True))[:100]
 top100 = [user[0] for user in top100]
 print(f'top10 = {top100[:10]}')
-times = read_Graphs(G0)
-# times=increment_times(G0)
+week_graphs = read_Graphs(G0)
+# week=increment_times(G0)   # were used do make the week_graphs in the first run
 data = []
 for artist in artists:
+    """ 
+    for each artist in our list get the best team between two methodologies, 
+    hill climb and team O five (more info in each function)
+    """
     print(f'for artist = {artist}')
-    hill_climb_team = hill_climb(times, top100, artist)  # hill_climb(times, top100, artist)
+    hill_climb_team = hill_climb(week_graphs, top100, artist)  # hill_climb(week, top100, artist)
     print(f'hill_climb_team = {hill_climb_team}')
-    hill_climb_score = infect(times, artist, hill_climb_team)
-    print(f' hill climb score = {hill_climb_score}')
-    kim_possible_team = team_O_five(times, top100, artist)
+    hill_climb_score = infect(week_graphs, artist, hill_climb_team)
+    print(f'hill climb score = {hill_climb_score}')
+    kim_possible_team = team_O_five(week_graphs, top100, artist)
     print(f'kim_possible_team = {kim_possible_team}')
-    kim_possible_score = infect(times, artist, kim_possible_team)
+    kim_possible_score = infect(week_graphs, artist, kim_possible_team)
     print(f'kim possible score = {kim_possible_score}')
     MIB = max((hill_climb_team, hill_climb_score), (kim_possible_team, kim_possible_score), key=lambda x: x[1])
     print(f'MIB = {MIB}')
@@ -358,9 +362,10 @@ for artist in artists:
     for man in MIB[0]:
         row.append(man)
     data.append(row)
+"""save the results in a csv file in the main folder"""
 cols = ['Artists']
 for i in range(5):
-    cols.append(f'influences {i + 1}')
+    cols.append(f'influencer {i + 1}')
 df = pd.DataFrame(data, columns=cols)
 df.to_csv('./influences.csv')
 
