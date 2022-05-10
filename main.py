@@ -206,45 +206,47 @@ def hill_climb(times, users, artist):
     :return: a team of 5 influences chosen by the hill climb method
     """
     team = []
+    unused_users = users.copy()
     for i in range(5):
-        team.append(hill_climb_step(times, users, artist, team))
+        team.append(hill_climb_step(times, unused_users, artist, team))
+        unused_users.remove(team[i])
     return team
 
 
-def hill_climb_step(times, users, artist, team):
+def hill_climb_step(times, unused_users, artist, team):
     kim = (None, 0)
-    for user in users:
-        if user not in team:
-            team_build = team.copy()
-            team_build.append(user)
-            anna_zack = (user, infect(times, artist, team_build))
-            kim = max(kim, anna_zack, key=lambda x: x[1])
+    for user in unused_users:
+        team_build = team.copy()
+        team_build.append(user)
+        anna_zack = (user, infect(times, artist, team_build))
+        kim = max(kim, anna_zack, key=lambda x: x[1])
     return kim[0]
 
 
-def better_than_kim(times, annas, artist):
+def team_O_five(times, users, artist):
     """
     another methodology to choose the most influential team
     out of the 100 highest HC-scoring users keep the 15 most individually influential users
     try all possible teams of 5 and keep the most successful team
     :param times: the week of the experiment
-    :param annas: 100 of the best scoring users (using Harmonic centrality methodology)
+    :param users: 100 of the best scoring users (using Harmonic centrality methodology)
     :param artist: the artist for the current run
     :return: the team that outdid the rest of 15C5 possible combination
     """
     possible_teams = []
-    kim_possible = ([], 0)
-    for anna in annas:
-        possible_teams.append((anna, infect(times, artist, [anna])))
+    best = 0
+    best_team = []
+    for user in users:
+        possible_teams.append((user, infect(times, artist, [user])))
     possible_teams = sorted(possible_teams, key=lambda x: x[1])[:15]
-    possible_teams = [anna[0] for anna in possible_teams]
+    possible_teams = [user[0] for user in possible_teams]
     possible_teams = choose_sets(possible_teams, 5)
     for team in possible_teams:
         score = infect(times, artist, team)
-        if score > kim_possible[1]:
-            kim_possible = (team, score)
-    res = kim_possible[0]
-    return res
+        if score > best:
+            best = score
+            best_team = team
+    return best_team
 
 
 def choose_sets(lst, k):
@@ -346,7 +348,7 @@ for artist in artists:
     print(f'hill_climb_team = {hill_climb_team}')
     hill_climb_score = infect(times, artist, hill_climb_team)
     print(f' hill climb score = {hill_climb_score}')
-    kim_possible_team = better_than_kim(times, top100, artist)
+    kim_possible_team = team_O_five(times, top100, artist)
     print(f'kim_possible_team = {kim_possible_team}')
     kim_possible_score = infect(times, artist, kim_possible_team)
     print(f'kim possible score = {kim_possible_score}')
