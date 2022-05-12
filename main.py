@@ -344,103 +344,108 @@ df = pd.DataFrame(data, columns=cols)
 df.to_csv('./influencers.csv')
 
 """just to evaluate the data"""
+# init for evaluation
+from scipy.stats import beta, gamma
+import matplotlib.pyplot as plt
+import numpy as np
+
+path=''
+G_1 = nx.Graph()
+
+good_art = [989, 16326, 144882, 194647]
+
+G_1 = nx.Graph()
+glam_1 = pd.read_csv(f'{path}instaglam_1.csv')
+for node, friend in zip(glam_1['userID'], glam_1['friendID']):
+    G_1.add_node(node, weight=0)
+    G_1.add_node(friend, weight=0)
+    G_1.add_edge(node, friend, weight=1)
+    G_1.add_edge(node, friend, weight=1)
+
+G0 = nx.Graph()
+glam0 = pd.read_csv(f'{path}instaglam0.csv')
+for node, friend in zip(glam0['userID'], glam0['friendID']):
+    G0.add_node(node, weight=0)
+    G0.add_node(friend, weight=0)
+    G0.add_edge(node, friend, weight=1)
+    G0.add_edge(node, friend, weight=1)
+node_overlap = []
+G0.remove_edges_from(nx.selfloop_edges(G0))
+# neighborhood overlap
+for user1 in G_1.nodes:
+    for user2 in nx.neighbors(G0, user1):
+        if not G_1.has_edge(user1, user2):
+            neig1 = [i for i in nx.neighbors(G_1, user1)]
+            neig2 = [i for i in nx.neighbors(G_1, user2)]
+            neig12 = 0
+            for i in neig1:
+                if i in neig2:
+                    neig12 += 1
+            node_overlap.append(neig12 / (len(neig2) + len(neig1) - neig12))
+dist = np.arange(0.0, 1.0, 0.02)
+n = 50
+probability = np.zeros(n)
+for i in node_overlap:
+    for j in range(n):
+        if i <= dist[j]:
+            probability[j] = probability[j] + 1
+            break
+print(probability)
+
+neighborhood_overlap = []
+for user1 in G_1.nodes:
+    for user2 in G_1.nodes:
+        if not G_1.has_edge(user1, user2):
+            neig1 = [i for i in nx.neighbors(G_1, user1)]
+            neig2 = [i for i in nx.neighbors(G_1, user2)]
+            neig12 = 0
+            for i in neig1:
+                if i in neig2:
+                    neig12 += 1
+            neighborhood_overlap.append(neig12 / (len(neig2) + len(neig1) - neig12))
+probability_all = np.zeros(n)
+for i in neighborhood_overlap:
+    for j in range(n):
+        if i <= dist[j]:
+            probability_all[j] = probability_all[j] + 1
+            break
+print(probability_all)
+
 #
-# G_1 = nx.Graph()
-# good_art = [989, 16326, 144882, 194647]
-# spotifly = pd.read_csv('spotifly.csv')
-# users = {}
-# for userid in spotifly['userID']:
-#     users[userid] = (User(userid, good_art))
-# pref = {}
-#
-# G_1 = nx.Graph()
-# glam_1 = pd.read_csv('instaglam_1.csv')
-# for node, friend in zip(glam_1['userID'], glam_1['friendID']):
-#     G_1.add_node(node, user=users[node], weight=0)  # attach the class User to the node in the graph
-#     G_1.add_node(friend, user=users[friend], weight=0)  # attach the class User to the node in the graph
-#     G_1.add_edge(node, friend, weight=1)
-#     G_1.add_edge(node, friend, weight=1)
-#
-# G0 = nx.Graph()
-# glam0 = pd.read_csv('instaglam0.csv')
-# for node, friend in zip(glam0['userID'], glam0['friendID']):
-#     G0.add_node(node, user=users[node], weight=0)  # attach the class User to the node in the graph
-#     G0.add_node(friend, user=users[friend], weight=0)  # attach the class User to the node in the graph
-#     G0.add_edge(node, friend, weight=1)
-#     G0.add_edge(node, friend, weight=1)
-# hemol = []
-# G0.remove_edges_from(nx.selfloop_edges(G0))
-# # neighborhood overlap
-# for user1 in G_1.nodes:
-#     for user2 in nx.neighbors(G0, user1):
-#         if not G_1.has_edge(user1, user2):
-#             neig1 = [i for i in nx.neighbors(G_1, user1)]
-#             neig2 = [i for i in nx.neighbors(G_1, user2)]
-#             neig12 = 0
-#             for i in neig1:
-#                 if i in neig2:
-#                     neig12 += 1
-#             hemol.append(neig12 / (len(neig2) + len(neig1) - neig12))
-# dist = np.arange(0.0, 1.0, 0.02)
-# n = 50
-# prec = np.zeros(n)
-# for i in hemol:
-#     for j in range(n):
-#         if i <= dist[j]:
-#             prec[j] = prec[j] + 1
-#             break
-# print(prec)
-#
-# hemol_all = []
-# for user1 in G_1.nodes:
-#     for user2 in G_1.nodes:
-#         if not G_1.has_edge(user1, user2):
-#             neig1 = [i for i in nx.neighbors(G_1, user1)]
-#             neig2 = [i for i in nx.neighbors(G_1, user2)]
-#             neig12 = 0
-#             for i in neig1:
-#                 if i in neig2:
-#                     neig12 += 1
-#             hemol_all.append(neig12 / (len(neig2) + len(neig1) - neig12))
-# prec_all = np.zeros(n)
-# for i in hemol_all:
-#     for j in range(n):
-#         if i <= dist[j]:
-#             prec_all[j] = prec_all[j] + 1
-#             break
-# print(prec_all)
-#
-# # print plots for evaluation
-# from scipy.stats import beta, gamma
-# import matplotlib.pyplot as plt
-#
-# prec_all_clean = prec_all
-# for i in range(len(prec)):
-#     if prec_all_clean[i] < 20:
-#         prec_all_clean[i] = 0
-#
-# p = np.true_divide(prec, prec_all_clean)
-# p[np.isnan(p)] = 0.4
-# p[np.isinf(p)] = 0.4
-# print(p)
-# p1 = p * 12
-# y = dist * 30
-# fig, axes = plt.subplots(figsize=(10, 10))
-# x = np.linspace(0, 30, 1000)
-#
-# # Varying positional arguments
-# a_b = 3.8
-# b_b = 0.5
-# gamma1 = gamma.pdf(x, a_b, b_b)
-# plt.plot(x, gamma1, c='b')
-#
-# a_g = 3.9
-# b_g = 0.5
-# gamma2 = gamma.pdf(x, a_g, b_g)
-# plt.plot(x, gamma2, c='r')
-#
-# plt.scatter(y, p1, s=20, c='g')
-# plt.show()
+# print plots for evaluation
+clean_probability_all=probability_all
+clean_probability=probability
+for i in range(len(probability_all)):
+  if clean_probability_all[i] <200:
+    clean_probability_all[i]=0
+  if clean_probability[i]<20:
+    clean_probability[i]=0
+
+p = np.true_divide(probability, clean_probability_all)
+
+mask= p!=np.nan
+print(p)
+plt.subplots(figsize=(10, 10))
+
+
+p1=p*12
+y=dist*30
+x = np.linspace(0, 30, 1000)
+
+# Varying positional arguments
+a_b=3.8
+b_b=0.5
+gamma1 = gamma.pdf(x, a_b, b_b)
+plt.plot(x, gamma1, c='b')
+
+a_g=4.2
+b_g=1.05
+gamma2 = gamma.pdf(x, a_g, b_g)
+plt.plot(x, gamma2, c='r')
+
+plt.scatter(y[mask], p1[mask], s=20, c='g')
+plt.scatter(y[mask], p[mask], s=20, c='b')
+plt.show()
 
 # # make new graph list with 0.01 precision
 # G1 = increment_connection(G0)
