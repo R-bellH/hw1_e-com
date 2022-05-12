@@ -13,21 +13,7 @@ from scipy.stats import gamma
 global listen
 
 
-#
-# class User:
-#     id = 0
-#     listen = {}
-#
-#     def __init__(self, userID, artists):
-#         self.id = userID
-#         for artist in artists:
-#             self.listen[artist] = 0
-#
-#     def update_plays(self, artist, plays):
-#         self.listen[artist] = plays
-
-
-def increment_times(G0):
+def increment_time(G0):
     G1 = increment_connection(G0)
     G2 = increment_connection(G1)
     G3 = increment_connection(G2)
@@ -35,17 +21,6 @@ def increment_times(G0):
     G5 = increment_connection(G4)
     G6 = increment_connection(G5)
     return [G0, G1, G2, G3, G4, G5, G6]
-
-
-def infected(week, artist, influncers):
-    """
-    wrapper function for infect, return both the chosen influncers and the score they got
-    :param week: array of the graphs over the 7 time periods (including zero)
-    :param artist: the artist for the current run
-    :param influncers: the chosen influncers
-    :return:  tuple with the influncers and the score they got on the graph
-    """
-    return (influncers, infect(week, artist, influncers))
 
 
 def infect(week, artist, influncers):
@@ -63,10 +38,10 @@ def infect(week, artist, influncers):
     G4 = increment_people(week[4], G3, artist)
     G5 = increment_people(week[5], G4, artist)
     G6 = increment_people(week[6], G5, artist)
-    infected = 0
+    infected_expectation = 0
     for i in G6.nodes:
-        infected += G6.nodes[i]['weight']
-    return infected
+        infected_expectation += G6.nodes[i]['weight']
+    return infected_expectation
 
 
 def patient_zero(G0, influncers):
@@ -108,7 +83,6 @@ def increment_connection(G):
                         Gt.add_edge(node1, node2, weight=weighted)
     # remove self_loops
     Gt.remove_edges_from(nx.selfloop_edges(Gt))
-
     return Gt
 
 
@@ -340,7 +314,7 @@ top100 = list(sorted(HC_scores.items(), key=lambda item: item[1], reverse=True))
 top100 = [user[0] for user in top100]
 print(f'top10 = {top100[:10]}')
 week_graphs = read_Graphs(G0)
-# week=increment_times(G0)   # were used do make the week_graphs in the first run
+# week=increment_time(G0)   # were used do make the week_graphs in the first run
 data = []
 for artist in artists:
     """ 
@@ -367,7 +341,7 @@ cols = ['Artists']
 for i in range(5):
     cols.append(f'influencer {i + 1}')
 df = pd.DataFrame(data, columns=cols)
-df.to_csv('./influences.csv')
+df.to_csv('./influencers.csv')
 
 """just to evaluate the data"""
 #
